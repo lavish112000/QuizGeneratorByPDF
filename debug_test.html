@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Test - PDF Quiz Generator</title>
+</head>
+<body>
+    <h1>Debug Test Page</h1>
+    <button onclick="testSampleFiles()">Test Sample Files API</button>
+    <button onclick="testExtraction()">Test Extraction Start</button>
+    <div id="output"></div>
+    
+    <script>
+    function log(message) {
+        console.log(message);
+        document.getElementById('output').innerHTML += '<p>' + message + '</p>';
+    }
+    
+    async function testSampleFiles() {
+        log('🔍 Testing sample files API...');
+        try {
+            const response = await fetch('/api/sample-files');
+            const data = await response.json();
+            log('✅ Sample files response: ' + JSON.stringify(data, null, 2));
+        } catch (error) {
+            log('❌ Sample files error: ' + error);
+        }
+    }
+    
+    async function testExtraction() {
+        log('🚀 Testing extraction start...');
+        try {
+            const options = {
+                useSamples: true,
+                questionCount: "25",
+                difficulty: "medium",
+                includeContext: true,
+                questionTypes: ["multiple-choice"]
+            };
+            
+            const response = await fetch('/api/start-extraction', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(options)
+            });
+            
+            const data = await response.json();
+            log('✅ Extraction response: ' + JSON.stringify(data, null, 2));
+            
+            // Check progress
+            setTimeout(checkProgress, 1000);
+            
+        } catch (error) {
+            log('❌ Extraction error: ' + error);
+        }
+    }
+    
+    async function checkProgress() {
+        try {
+            const response = await fetch('/api/extraction-progress');
+            const data = await response.json();
+            log('📊 Progress: ' + data.progress + '% - ' + data.message);
+            
+            if (data.status === 'processing') {
+                setTimeout(checkProgress, 2000);
+            } else if (data.status === 'completed') {
+                log('🎉 Extraction completed!');
+                testQuestions();
+            } else if (data.status === 'error') {
+                log('❌ Extraction failed: ' + data.message);
+            }
+        } catch (error) {
+            log('❌ Progress check error: ' + error);
+        }
+    }
+    
+    async function testQuestions() {
+        log('📋 Testing questions API...');
+        try {
+            const response = await fetch('/api/questions');
+            const data = await response.json();
+            log('✅ Questions count: ' + data.total);
+            if (data.questions && data.questions.length > 0) {
+                log('First question: ' + data.questions[0].question.substring(0, 100) + '...');
+            }
+        } catch (error) {
+            log('❌ Questions error: ' + error);
+        }
+    }
+    </script>
+</body>
+</html>

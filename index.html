@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Quiz Generator - Select Files</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Floating Particles -->
+    <div class="floating-particles">
+        <div class="particle particle-1"><i class="fas fa-graduation-cap"></i></div>
+        <div class="particle particle-2"><i class="fas fa-question"></i></div>
+        <div class="particle particle-3"><i class="fas fa-brain"></i></div>
+        <div class="particle particle-4"><i class="fas fa-lightbulb"></i></div>
+        <div class="particle particle-5"><i class="fas fa-star"></i></div>
+        <div class="particle particle-6"><i class="fas fa-trophy"></i></div>
+        <div class="particle particle-7"><i class="fas fa-award"></i></div>
+        <div class="particle particle-8"><i class="fas fa-certificate"></i></div>
+        <div class="particle particle-9"><i class="fas fa-medal"></i></div>
+        <div class="particle particle-10"><i class="fas fa-check-circle"></i></div>
+    </div>
+
+    <div class="container">
+        <!-- Header Section -->
+        <header class="main-header">
+            <div class="header-content">
+                <h1 class="main-title">
+                    <i class="fas fa-graduation-cap"></i>
+                    PDF Quiz Generator
+                </h1>
+                <p class="main-subtitle">
+                    Extract questions from various file formats and create interactive quizzes
+                </p>
+            </div>
+        </header>
+
+        <!-- File Selection Section -->
+        <main class="main-content">
+            <div class="file-selection-container">
+                <div class="section-header">
+                    <h2><i class="fas fa-file-upload"></i> Select Files for Question Extraction</h2>
+                    <p>Choose from multiple file formats to extract quiz questions</p>
+                </div>
+
+                <!-- File Format Selection -->
+                <div class="format-selection">
+                    <h3><i class="fas fa-cogs"></i> Choose File Format</h3>
+                    <div class="format-grid">
+                        <div class="format-card active" data-format="pdf">
+                            <div class="format-icon">
+                                <i class="fas fa-file-pdf"></i>
+                            </div>
+                            <h4>PDF Files</h4>
+                            <p>Extract from PDF documents with advanced text recognition</p>
+                            <div class="format-features">
+                                <span class="feature-tag">✓ Text Extraction</span>
+                                <span class="feature-tag">✓ Context Preservation</span>
+                                <span class="feature-tag">✓ Multi-page Support</span>
+                            </div>
+                        </div>
+
+                        <div class="format-card" data-format="txt">
+                            <div class="format-icon">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <h4>Text Files</h4>
+                            <p>Process plain text files for quick question generation</p>
+                            <div class="format-features">
+                                <span class="feature-tag">✓ Fast Processing</span>
+                                <span class="feature-tag">✓ Simple Format</span>
+                                <span class="feature-tag">✓ Lightweight</span>
+                            </div>
+                        </div>
+
+                        <div class="format-card" data-format="docx">
+                            <div class="format-icon">
+                                <i class="fas fa-file-word"></i>
+                            </div>
+                            <h4>Word Documents</h4>
+                            <p>Extract from Microsoft Word DOCX files</p>
+                            <div class="format-features">
+                                <span class="feature-tag">✓ Rich Content</span>
+                                <span class="feature-tag">✓ Formatted Text</span>
+                                <span class="feature-tag">✓ Structure Preserved</span>
+                            </div>
+                        </div>
+
+                        <div class="format-card" data-format="doc">
+                            <div class="format-icon">
+                                <i class="fas fa-file-word"></i>
+                            </div>
+                            <h4>Legacy Word</h4>
+                            <p>Support for older DOC file formats</p>
+                            <div class="format-features">
+                                <span class="feature-tag">✓ Legacy Support</span>
+                                <span class="feature-tag">✓ Compatibility</span>
+                                <span class="feature-tag">✓ Reliable</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File Upload Section -->
+                <div class="upload-section">
+                    <div class="upload-methods">
+                        <!-- Direct File Upload -->
+                        <div class="upload-method active" id="uploadMethod">
+                            <h3><i class="fas fa-cloud-upload-alt"></i> Upload Files</h3>
+                            <div class="upload-area" id="uploadArea">
+                                <div class="upload-content">
+                                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                                    <h4>Drag & Drop Files Here</h4>
+                                    <p>or click to browse files</p>
+                                    <div class="supported-formats">
+                                        <span class="format-tag">PDF</span>
+                                        <span class="format-tag">TXT</span>
+                                        <span class="format-tag">DOCX</span>
+                                        <span class="format-tag">DOC</span>
+                                    </div>
+                                </div>
+                                <input type="file" id="fileInput" multiple accept=".pdf,.txt,.docx,.doc" hidden>
+                            </div>
+                        </div>
+
+                        <!-- Sample Files -->
+                        <div class="upload-method" id="sampleMethod">
+                            <h3><i class="fas fa-folder-open"></i> Use Sample Files</h3>
+                            <div class="sample-files-grid" id="sampleFilesGrid">
+                                <!-- Sample files will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upload Options Toggle -->
+                    <div class="upload-toggle">
+                        <button class="toggle-btn active" data-method="upload">
+                            <i class="fas fa-upload"></i>
+                            Upload Files
+                        </button>
+                        <button class="toggle-btn" data-method="sample">
+                            <i class="fas fa-folder"></i>
+                            Sample Files
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Selected Files Display -->
+                <div class="selected-files hidden" id="selectedFiles">
+                    <h3><i class="fas fa-list"></i> Selected Files</h3>
+                    <div class="files-list" id="filesList">
+                        <!-- Selected files will be displayed here -->
+                    </div>
+                </div>
+
+                <!-- Extraction Options -->
+                <div class="extraction-options hidden" id="extractionOptions">
+                    <h3><i class="fas fa-settings"></i> Extraction Settings</h3>
+                    <div class="options-grid">
+                        <div class="option-card">
+                            <label for="questionCount">
+                                <i class="fas fa-hashtag"></i>
+                                Number of Questions
+                            </label>
+                            <select id="questionCount">
+                                <option value="25">25 Questions</option>
+                                <option value="50" selected>50 Questions</option>
+                                <option value="75">75 Questions</option>
+                                <option value="100">100 Questions</option>
+                            </select>
+                        </div>
+
+                        <div class="option-card">
+                            <label for="includeContext">
+                                <i class="fas fa-align-left"></i>
+                                Include Context
+                            </label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="includeContext" checked>
+                                <span class="slider"></span>
+                            </div>
+                        </div>
+
+                        <div class="option-card">
+                            <label for="difficulty">
+                                <i class="fas fa-chart-line"></i>
+                                Difficulty Level
+                            </label>
+                            <select id="difficulty">
+                                <option value="easy">Easy</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="hard">Hard</option>
+                                <option value="mixed">Mixed</option>
+                            </select>
+                        </div>
+
+                        <div class="option-card">
+                            <label for="questionTypes">
+                                <i class="fas fa-list-check"></i>
+                                Question Types
+                            </label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="questionTypes" value="mcq" checked>
+                                    <span class="checkmark"></span>
+                                    Multiple Choice
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="questionTypes" value="fillblanks" checked>
+                                    <span class="checkmark"></span>
+                                    Fill in Blanks
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="questionTypes" value="truefalse">
+                                    <span class="checkmark"></span>
+                                    True/False
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-section">
+                    <button class="btn btn-primary btn-large" id="extractBtn" disabled>
+                        <i class="fas fa-magic"></i>
+                        Extract Questions
+                    </button>
+                    <button class="btn btn-secondary btn-large" id="previewBtn" disabled>
+                        <i class="fas fa-eye"></i>
+                        Preview Content
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Progress Modal -->
+        <div class="modal-overlay hidden" id="progressModal">
+            <div class="modal progress-modal">
+                <div class="modal-header">
+                    <h3><i class="fas fa-cogs"></i> Extracting Questions</h3>
+                </div>
+                <div class="modal-content">
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span id="progressPercentage">0%</span>
+                            <span id="progressMessage">Initializing...</span>
+                        </div>
+                    </div>
+                    <div class="extraction-stats">
+                        <div class="stat-item">
+                            <span class="stat-number" id="questionsFound">0</span>
+                            <span class="stat-label">Questions Found</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="filesProcessed">0</span>
+                            <span class="stat-label">Files Processed</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="currentFile">-</span>
+                            <span class="stat-label">Current File</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancelExtraction">
+                        <i class="fas fa-times"></i>
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <div class="footer-content">
+                <p>&copy; 2025 PDF Quiz Generator. Advanced question extraction powered by AI.</p>
+                <div class="footer-links">
+                    <a href="#" class="footer-link">Help</a>
+                    <a href="#" class="footer-link">About</a>
+                    <a href="#" class="footer-link">Contact</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="file-selector.js"></script>
+</body>
+</html>

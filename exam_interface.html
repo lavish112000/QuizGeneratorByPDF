@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Quiz Exam Interface</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Floating Particles -->
+    <div class="floating-particles">
+        <div class="particle particle-1"><i class="fas fa-graduation-cap"></i></div>
+        <div class="particle particle-2"><i class="fas fa-question"></i></div>
+        <div class="particle particle-3"><i class="fas fa-brain"></i></div>
+        <div class="particle particle-4"><i class="fas fa-lightbulb"></i></div>
+        <div class="particle particle-5"><i class="fas fa-star"></i></div>
+        <div class="particle particle-6"><i class="fas fa-trophy"></i></div>
+        <div class="particle particle-7"><i class="fas fa-award"></i></div>
+        <div class="particle particle-8"><i class="fas fa-certificate"></i></div>
+        <div class="particle particle-9"><i class="fas fa-medal"></i></div>
+        <div class="particle particle-10"><i class="fas fa-check-circle"></i></div>
+    </div>
+
+    <div class="exam-container">
+        <!-- Header Section -->
+        <header class="exam-header">
+            <div class="header-left">
+                <h1 class="exam-title">
+                    <i class="fas fa-graduation-cap"></i>
+                    PDF Quiz Exam
+                </h1>
+                <div class="exam-info">
+                    <span class="exam-subject">CHSL Examination</span>
+                    <span class="exam-date" id="examDate"></span>
+                </div>
+            </div>
+            
+            <div class="header-right">
+                <div class="timer-container">
+                    <i class="fas fa-clock"></i>
+                    <div class="timer" id="timer">
+                        <span id="hours">01</span>:
+                        <span id="minutes">30</span>:
+                        <span id="seconds">00</span>
+                    </div>
+                </div>
+                <div class="exam-progress">
+                    <span class="progress-text">Progress: <span id="progressPercentage">0%</span></span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="exam-main">
+            <!-- Question Area -->
+            <section class="question-section">
+                <div class="question-header">
+                    <div class="question-number">
+                        <span>Question <span id="currentQuestionNumber">1</span> of <span id="totalQuestions">10</span></span>
+                    </div>
+                    <div class="question-status">
+                        <span class="status-indicator" id="questionStatus">
+                            <i class="fas fa-circle"></i> Not Answered
+                        </span>
+                    </div>
+                </div>
+
+                <div class="question-content">
+                    <div class="question-text" id="questionText">
+                        Loading question...
+                    </div>
+                    
+                    <div class="options-container" id="optionsContainer">
+                        <!-- Options will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Question Navigation Controls -->
+                <div class="question-controls">
+                    <button class="btn btn-secondary" id="prevBtn" disabled>
+                        <i class="fas fa-chevron-left"></i>
+                        Previous
+                    </button>
+                    
+                    <div class="control-buttons">
+                        <button class="btn btn-save" id="saveBtn">
+                            <i class="fas fa-save"></i>
+                            Save
+                        </button>
+                        <button class="btn btn-clear" id="clearBtn">
+                            <i class="fas fa-eraser"></i>
+                            Clear
+                        </button>
+                        <button class="btn btn-mark" id="markBtn">
+                            <i class="fas fa-flag"></i>
+                            Mark for Review
+                        </button>
+                    </div>
+                    
+                    <button class="btn btn-primary" id="nextBtn">
+                        Next
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Question Panel -->
+            <aside class="question-panel">
+                <div class="panel-header">
+                    <h3>Question Navigator</h3>
+                    <div class="panel-toggle" id="panelToggle">
+                        <i class="fas fa-chevron-left"></i>
+                    </div>
+                </div>
+                
+                <div class="panel-content">
+                    <div class="legend">
+                        <div class="legend-item">
+                            <span class="legend-color answered"></span>
+                            <span>Answered</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color not-answered"></span>
+                            <span>Not Answered</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color marked"></span>
+                            <span>Marked for Review</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color current"></span>
+                            <span>Current</span>
+                        </div>
+                    </div>
+                    
+                    <div class="question-grid" id="questionGrid">
+                        <!-- Question numbers will be populated by JavaScript -->
+                    </div>
+                    
+                    <div class="panel-stats">
+                        <div class="stat-item">
+                            <span class="stat-number" id="answeredCount">0</span>
+                            <span class="stat-label">Answered</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="markedCount">0</span>
+                            <span class="stat-label">Marked</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="unansweredCount">10</span>
+                            <span class="stat-label">Unanswered</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Footer with Submit Button -->
+        <footer class="exam-footer">
+            <div class="footer-info">
+                <span class="instruction-text">
+                    <i class="fas fa-info-circle"></i>
+                    Click on question numbers to navigate. Use Save & Next to move forward.
+                </span>
+            </div>
+            <div class="footer-actions">
+                <button class="btn btn-warning" id="submitBtn">
+                    <i class="fas fa-paper-plane"></i>
+                    Submit Exam
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Submit Confirmation Modal -->
+    <div class="modal-overlay modal-hidden" id="submitModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Submit Exam</h3>
+                <button class="modal-close" id="modalClose" title="Close modal" aria-label="Close submission modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-content">
+                <div class="submit-summary">
+                    <h4>Exam Summary</h4>
+                    <div class="summary-stats">
+                        <div class="summary-item">
+                            <span class="summary-label">Total Questions:</span>
+                            <span class="summary-value" id="summaryTotal">10</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Answered:</span>
+                            <span class="summary-value" id="summaryAnswered">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Marked for Review:</span>
+                            <span class="summary-value" id="summaryMarked">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Time Remaining:</span>
+                            <span class="summary-value" id="summaryTime">01:30:00</span>
+                        </div>
+                    </div>
+                    <div class="warning-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Once you submit, you cannot change your answers. Are you sure you want to submit?</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelSubmit">Cancel</button>
+                <button class="btn btn-danger" id="confirmSubmit">
+                    <i class="fas fa-check"></i>
+                    Yes, Submit
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2>Loading Quiz Questions...</h2>
+            <p>Please wait while we prepare your exam</p>
+            <div class="loading-progress">
+                <div class="loading-bar" id="loadingBar"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script_api.js"></script>
+</body>
+</html>

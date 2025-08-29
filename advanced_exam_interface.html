@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Quiz Exam - Advanced Interface</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Floating Particles -->
+    <div class="floating-particles">
+        <div class="particle particle-1"><i class="fas fa-graduation-cap"></i></div>
+        <div class="particle particle-2"><i class="fas fa-question"></i></div>
+        <div class="particle particle-3"><i class="fas fa-brain"></i></div>
+        <div class="particle particle-4"><i class="fas fa-lightbulb"></i></div>
+        <div class="particle particle-5"><i class="fas fa-star"></i></div>
+        <div class="particle particle-6"><i class="fas fa-trophy"></i></div>
+        <div class="particle particle-7"><i class="fas fa-award"></i></div>
+        <div class="particle particle-8"><i class="fas fa-certificate"></i></div>
+        <div class="particle particle-9"><i class="fas fa-medal"></i></div>
+        <div class="particle particle-10"><i class="fas fa-check-circle"></i></div>
+    </div>
+
+    <!-- Advanced Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-container">
+            <div class="loading-logo">
+                <i class="fas fa-file-pdf"></i>
+                <i class="fas fa-arrow-right"></i>
+                <i class="fas fa-question-circle"></i>
+            </div>
+            <h2 class="loading-title">Advanced PDF Quiz Extraction</h2>
+            <div class="loading-text" id="loadingText">
+                🔄 Loading questions from PDF files...<br>
+                📚 Processing CHSL examination papers<br>
+                ⚡ Preparing modern exam interface...
+            </div>
+            
+            <div class="loading-progress-container">
+                <div class="loading-progress-bar">
+                    <div class="loading-progress" id="loadingBar"></div>
+                </div>
+                <div class="loading-percentage" id="loadingPercentage">0%</div>
+            </div>
+            
+            <div class="loading-details">
+                <div class="loading-stat">
+                    <span class="stat-label">Questions Found:</span>
+                    <span class="stat-value" id="questionsFound">0</span>
+                </div>
+                <div class="loading-stat">
+                    <span class="stat-label">Current File:</span>
+                    <span class="stat-value" id="currentFileLoading">Initializing...</span>
+                </div>
+                <div class="loading-stat">
+                    <span class="stat-label">Status:</span>
+                    <span class="stat-value" id="extractionStatus">Starting...</span>
+                </div>
+            </div>
+            
+            <div class="loading-spinner">
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Exam Interface -->
+    <div class="exam-container exam-container-hidden" id="examContainer">
+        <!-- Header -->
+        <header class="exam-header">
+            <div class="header-left">
+                <div class="exam-title">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>PDF Quiz Examination</span>
+                </div>
+                <div class="exam-info">
+                    <span id="examDate"></span> | Advanced Interface
+                </div>
+            </div>
+            <div class="header-center">
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressBar"></div>
+                    </div>
+                    <div class="progress-text">
+                        Question <span id="currentQuestion">1</span> of <span id="totalQuestions">100</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="timer-container">
+                    <i class="fas fa-clock"></i>
+                    <span class="timer" id="timer">01:30:00</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Question Section -->
+            <section class="question-section">
+                <div class="question-container">
+                    <div class="question-header">
+                        <span class="question-number">Question <span id="currentQuestionNum">1</span></span>
+                        <div class="question-actions">
+                            <button class="action-btn" id="markBtn">
+                                <i class="fas fa-bookmark"></i>
+                                Mark for Review
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="question-text" id="questionText">
+                        Loading question...
+                    </div>
+                    
+                    <div class="options-container" id="optionsContainer">
+                        <!-- Options will be loaded dynamically -->
+                    </div>
+                    
+                    <div class="question-controls">
+                        <button class="control-btn secondary" id="clearBtn">
+                            <i class="fas fa-eraser"></i>
+                            Clear Response
+                        </button>
+                        <button class="control-btn primary" id="saveBtn">
+                            <i class="fas fa-save"></i>
+                            Save & Next
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Navigation Panel -->
+            <aside class="navigation-panel">
+                <div class="nav-header">
+                    <h3><i class="fas fa-list"></i> Question Navigator</h3>
+                    <div class="nav-stats">
+                        <div class="stat-item">
+                            <span class="stat-number" id="answeredCount">0</span>
+                            <span class="stat-label">Answered</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="markedCount">0</span>
+                            <span class="stat-label">Marked</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="totalCount">100</span>
+                            <span class="stat-label">Total</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="question-navigator" id="questionNavigator">
+                    <!-- Question buttons will be generated dynamically -->
+                </div>
+                
+                <div class="nav-legend">
+                    <div class="legend-item">
+                        <div class="legend-color current"></div>
+                        <span>Current</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color answered"></div>
+                        <span>Answered</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color marked"></div>
+                        <span>Marked</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color unanswered"></div>
+                        <span>Not Visited</span>
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Footer -->
+        <footer class="exam-footer">
+            <div class="footer-left">
+                <button class="nav-btn secondary" id="prevBtn">
+                    <i class="fas fa-chevron-left"></i>
+                    Previous
+                </button>
+                <button class="nav-btn primary" id="nextBtn">
+                    Next
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            <div class="footer-right">
+                <button class="submit-btn" id="submitBtn">
+                    <i class="fas fa-paper-plane"></i>
+                    Submit Exam
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Submit Confirmation Modal -->
+    <div id="submitModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-check-circle"></i> Submit Examination</h2>
+                <button class="close-btn" id="closeModal" title="Close modal" aria-label="Close submission modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="submit-summary">
+                    <div class="summary-item">
+                        <span class="summary-label">Total Questions:</span>
+                        <span class="summary-value" id="modalTotal">100</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Answered:</span>
+                        <span class="summary-value" id="modalAnswered">0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Unanswered:</span>
+                        <span class="summary-value warning" id="modalUnanswered">100</span>
+                    </div>
+                </div>
+                <div class="submit-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Are you sure you want to submit your examination? This action cannot be undone.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn secondary" id="cancelSubmit">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+                <button class="modal-btn primary" id="confirmSubmit">
+                    <i class="fas fa-check"></i>
+                    Confirm Submit
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Question Loading Modal -->
+    <div id="questionLoadingModal" class="modal modal-hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-sync-alt fa-spin"></i> Loading Questions</h2>
+            </div>
+            <div class="modal-body">
+                <div class="loading-message">
+                    <p>Please wait while we load questions from your PDF files...</p>
+                    <div class="api-loading-bar">
+                        <div class="api-progress" id="apiLoadingProgress"></div>
+                    </div>
+                    <div class="api-status" id="apiLoadingStatus">Connecting to server...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script_api.js"></script>
+</body>
+</html>
