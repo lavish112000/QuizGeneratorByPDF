@@ -197,6 +197,17 @@
                         </div>
 
                         <div class="option-card">
+                            <label for="extractionMethod">
+                                <i class="fas fa-brain"></i>
+                                Extraction Method
+                            </label>
+                            <select id="extractionMethod">
+                                <option value="regular" selected>Regular Extraction</option>
+                                <option value="gemini">Gemini AI (Enhanced)</option>
+                            </select>
+                        </div>
+
+                        <div class="option-card">
                             <label for="questionTypes">
                                 <i class="fas fa-list-check"></i>
                                 Question Types
@@ -271,6 +282,40 @@
                     <button class="btn btn-secondary" id="cancelExtraction">
                         <i class="fas fa-times"></i>
                         Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Modal -->
+        <div class="modal-overlay hidden" id="previewModal">
+            <div class="modal preview-modal">
+                <div class="modal-header">
+                    <h3><i class="fas fa-eye"></i> Content Preview</h3>
+                    <button class="modal-close" id="closePreview">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-content">
+                    <div class="preview-container">
+                        <div class="preview-text-section">
+                            <h4><i class="fas fa-file-alt"></i> File Content</h4>
+                            <div class="preview-text" id="previewText">
+                                <div class="loading">Loading content...</div>
+                            </div>
+                        </div>
+                        <div class="preview-metadata-section">
+                            <h4><i class="fas fa-info-circle"></i> File Information</h4>
+                            <div class="metadata-info" id="metadataInfo">
+                                <div class="loading">Loading metadata...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="closePreviewBtn">
+                        <i class="fas fa-times"></i>
+                        Close
                     </button>
                 </div>
             </div>

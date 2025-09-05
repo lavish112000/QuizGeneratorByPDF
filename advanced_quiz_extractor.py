@@ -13,97 +13,167 @@ import json
 from datetime import datetime
 import time
 
+# Add DOCX support
+try:
+    from docx import Document
+    DOCX_AVAILABLE = True
+except ImportError:
+    DOCX_AVAILABLE = False
+    print("⚠️ python-docx not available. DOCX support disabled.")
+
 class AdvancedQuizExtractor:
     def __init__(self):
         self.questions = []
         self.total_questions_target = 100
         
-    def extract_text_from_pdf(self, pdf_path):
-        """Extract all text from a PDF file with page information."""
-        try:
-            reader = PdfReader(pdf_path)
-            all_text = ""
-            page_texts = []
-            
-            print(f"📖 Reading {len(reader.pages)} pages from {pdf_path.name}...")
-            
-            for i, page in enumerate(reader.pages):
-                page_text = page.extract_text()
-                page_texts.append(page_text)
-                all_text += f"\n--- PAGE {i+1} ---\n" + page_text
-                
-            return all_text, page_texts
-        except Exception as e:
-            print(f"❌ Error reading PDF {pdf_path}: {e}")
+    def extract_text_from_file(self, file_path):
+        """Extract text from PDF, TXT, or DOCX files."""
+        file_path_obj = Path(file_path)
+        
+        if file_path_obj.suffix.lower() == '.pdf':
+            return self.extract_text_from_pdf(file_path)
+        elif file_path_obj.suffix.lower() == '.txt':
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    text = f.read()
+                print(f"📖 Read text file {file_path_obj.name} ({len(text)} characters)")
+                return text, [text]  # Return text and single page
+            except Exception as e:
+                print(f"❌ Error reading text file {file_path}: {e}")
+                return None, []
+        elif file_path_obj.suffix.lower() in ['.docx', '.doc'] and DOCX_AVAILABLE:
+            try:
+                doc = Document(file_path)
+                text = ""
+                for paragraph in doc.paragraphs:
+                    text += paragraph.text + "\n"
+                print(f"📖 Read DOCX file {file_path_obj.name} ({len(text)} characters)")
+                return text, [text]  # Return text and single page
+            except Exception as e:
+                print(f"❌ Error reading DOCX file {file_path}: {e}")
+                return None, []
+        else:
+            print(f"❌ Unsupported file type: {file_path_obj.suffix}")
             return None, []
 
     def extract_quiz_questions(self, text):
-        """Extract actual quiz questions from PDF text."""
+        """Extract actual quiz questions from PDF text with improved accuracy."""
         questions = []
-        
-        # Pattern to match numbered questions (1., 2., Q1, Q.1, etc.)
+
+        # Enhanced patterns for different question formats
         question_patterns = [
-            r'(?:^|\n)\s*(\d+)\.?\s*(.+?)(?=\n\s*(?:\d+\.|\(A\)|\(a\)|A\.)|$)',
-            r'(?:^|\n)\s*Q\.?\s*(\d+)\.?\s*(.+?)(?=\n\s*(?:\d+\.|\(A\)|\(a\)|A\.)|$)',
-            r'(?:^|\n)\s*Question\s*(\d+)\.?\s*(.+?)(?=\n\s*(?:\d+\.|\(A\)|\(a\)|A\.)|$)'
+            # Standard numbered questions: 1. Question text
+            r'(?:^|\n)\s*(\d+)\.\s*([^\n]+?)(?=\n\s*(?:\d+\.|\(A\)|\(a\)|A\.|B\.|C\.|D\.|\(B\)|\(C\)|\(D\)|$))',
+            # Question with Q prefix: Q1. Question text or Question 1.
+            r'(?:^|\n)\s*(?:Q\.?\s*)?(\d+)\.?\s*([^\n]+?)(?=\n\s*(?:\d+\.|\(A\)|\(a\)|A\.|B\.|C\.|D\.|\(B\)|\(C\)|\(D\)|$))',
+            # Alternative format: Question 1: Question text
+            r'(?:^|\n)\s*Question\s+(\d+)[:.]\s*([^\n]+?)(?=\n\s*(?:\d+\.|\(A\)|\(a\)|A\.|B\.|C\.|D\.|\(B\)|\(C\)|\(D\)|$))',
+            # Fill-in-the-blank format: 1. Text (number) ______
+            r'\s*(\d+)\.\s*([^(]*?)\((\d+)\)\s*______\s*([^\n]*?)(?:\n|$)'
         ]
-        
-        # Pattern to match options (A), (B), (C), (D) or A., B., C., D.
+
+        # Enhanced option patterns
         option_patterns = [
-            r'(?:\(([A-D])\)|([A-D])\.)\s*([^\n]+)',
-            r'(?:\(([a-d])\)|([a-d])\.)\s*([^\n]+)'
+            # Standard format: (A) Option text or A. Option text
+            r'(?:\(([A-D])\)|\b([A-D])\.)\s*([^(\n]+?)(?=\n\s*(?:\([A-D]\)|[A-D]\.|\d+\.|$))',
+            # Lowercase options
+            r'(?:\(([a-d])\)|\b([a-d])\.)\s*([^(\n]+?)(?=\n\s*(?:\([a-d]\)|[a-d]\.|\d+\.|$))'
         ]
-        
-        # Split text into potential question blocks
-        lines = text.split('\n')
+
+        # Split text into lines and clean up
+        lines = [line.strip() for line in text.split('\n') if line.strip()]
         current_question = None
         current_options = []
         question_id = 1
-        
-        for i, line in enumerate(lines):
-            line = line.strip()
-            if not line:
-                continue
-                
+
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+
             # Check if this line starts a new question
+            question_found = False
             for pattern in question_patterns:
-                match = re.search(pattern, line, re.MULTILINE | re.DOTALL)
+                match = re.search(pattern, line, re.IGNORECASE)
                 if match:
                     # Save previous question if it exists
-                    if current_question and len(current_options) >= 4:
+                    if current_question and len(current_options) >= 2:
                         questions.append({
                             'id': question_id,
                             'text': current_question.strip(),
-                            'options': current_options[:4],  # Take first 4 options
-                            'correct': 'A'  # Default, will be updated if answer key found
+                            'options': current_options[:4],
+                            'correct': 'A'
                         })
                         question_id += 1
-                    
-                    # Start new question
-                    current_question = match.group(2) if len(match.groups()) > 1 else match.group(1)
+                    elif current_question and len(current_options) == 0:
+                        # For fill-in-the-blank questions without options, generate default options
+                        default_options = [
+                            'A. appropriate',
+                            'B. system', 
+                            'C. process',
+                            'D. method'
+                        ]
+                        questions.append({
+                            'id': question_id,
+                            'text': current_question.strip(),
+                            'options': default_options,
+                            'correct': 'A'
+                        })
+                        question_id += 1
+
+                    # Extract question text based on pattern
+                    if len(match.groups()) >= 4:  # Fill-in-the-blank format with blank number
+                        before_blank = match.group(2).strip()
+                        blank_number = match.group(3)
+                        after_blank = match.group(4).strip()
+                        current_question = f"{before_blank} ({blank_number}) ______ {after_blank}".strip()
+                    elif len(match.groups()) >= 2:
+                        current_question = match.group(2).strip()
+                    else:
+                        current_question = match.group(1).strip()
                     current_options = []
+                    question_found = True
                     break
-            
-            # Check if this line is an option
-            for pattern in option_patterns:
-                matches = re.finditer(pattern, line)
-                for match in matches:
-                    option_letter = (match.group(1) or match.group(2) or '').upper()
-                    option_text = match.group(3) if len(match.groups()) > 2 else match.group(-1)
-                    
-                    if option_letter and option_text:
-                        formatted_option = f"{option_letter}. {option_text.strip()}"
-                        current_options.append(formatted_option)
-        
-        # Add the last question if valid
-        if current_question and len(current_options) >= 4:
-            questions.append({
-                'id': question_id,
-                'text': current_question.strip(),
-                'options': current_options[:4],
-                'correct': 'A'
-            })
-        
+
+            if not question_found and current_question:
+                # Look for options in subsequent lines
+                for pattern in option_patterns:
+                    matches = list(re.finditer(pattern, line, re.IGNORECASE))
+                    for match in matches:
+                        option_letter = (match.group(1) or match.group(2) or '').upper()
+                        option_text = match.group(3).strip() if len(match.groups()) >= 3 else ''
+
+                        if option_letter and option_text and len(option_text) > 3:
+                            formatted_option = f"{option_letter}. {option_text}"
+                            if formatted_option not in current_options:
+                                current_options.append(formatted_option)
+
+            i += 1
+
+        # Add the last question if it exists
+        if current_question:
+            if len(current_options) >= 2:
+                questions.append({
+                    'id': question_id,
+                    'text': current_question.strip(),
+                    'options': current_options[:4],
+                    'correct': 'A'
+                })
+            else:
+                # Generate default options for fill-in-the-blank
+                default_options = [
+                    'A. appropriate',
+                    'B. system', 
+                    'C. process',
+                    'D. method'
+                ]
+                questions.append({
+                    'id': question_id,
+                    'text': current_question.strip(),
+                    'options': default_options,
+                    'correct': 'A'
+                })
+
+        print(f"📝 Extracted {len(questions)} questions from text")
         return questions
 
     def extract_fill_in_blanks(self, text):
@@ -153,28 +223,33 @@ class AdvancedQuizExtractor:
                     
         return questions
 
-    def process_all_pdfs(self, sample_files_dir="sample-files"):
-        """Process all PDF files and extract questions."""
+    def process_all_files(self, sample_files_dir="sample-files"):
+        """Process all PDF, TXT, and DOCX files and extract questions."""
         sample_dir = Path(sample_files_dir)
         if not sample_dir.exists():
             print(f"❌ Directory {sample_files_dir} not found!")
             return []
         
+        # Support PDF, TXT, and DOCX files
         pdf_files = list(sample_dir.glob("*.pdf"))
-        if not pdf_files:
-            print(f"❌ No PDF files found in {sample_files_dir}")
+        txt_files = list(sample_dir.glob("*.txt"))
+        docx_files = list(sample_dir.glob("*.docx")) + list(sample_dir.glob("*.doc"))
+        all_files = pdf_files + txt_files + docx_files
+        
+        if not all_files:
+            print(f"❌ No PDF, TXT, or DOCX files found in {sample_files_dir}")
             return []
         
         print(f"🎯 Target: Extract {self.total_questions_target} questions")
-        print(f"📚 Processing {len(pdf_files)} PDF files...")
+        print(f"📚 Processing {len(all_files)} files ({len(pdf_files)} PDFs, {len(txt_files)} TXTs, {len(docx_files)} DOCX)...")
         
         all_questions = []
         
-        for pdf_file in pdf_files:
-            print(f"\n📖 Processing {pdf_file.name}...")
+        for file_path in all_files:
+            print(f"\n📖 Processing {file_path.name}...")
             
-            # Extract text
-            full_text, page_texts = self.extract_text_from_pdf(pdf_file)
+            # Extract text from file (PDF, TXT, or DOCX)
+            full_text, page_texts = self.extract_text_from_file(file_path)
             if not full_text:
                 continue
             
@@ -243,7 +318,7 @@ def main():
     extractor = AdvancedQuizExtractor()
     
     # Process PDFs and extract questions
-    questions = extractor.process_all_pdfs()
+    questions = extractor.process_all_files()
     
     if questions:
         # Save to files

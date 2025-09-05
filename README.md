@@ -71,7 +71,6 @@ on [StackOverflow](https://stackoverflow.com/questions/tagged/pypdf),
 helping in [discussions](https://github.com/py-pdf/pypdf/discussions),
 and asking users who report issues for [MCVE](https://stackoverflow.com/help/minimal-reproducible-example)'s (Code + example PDF!).
 
-
 ### Issues
 
 A good bug ticket includes a MCVE - a minimal complete verifiable example.

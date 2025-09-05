@@ -4,191 +4,194 @@
  */
 
 class FileSelector {
-    constructor() {
-        this.selectedFiles = [];
-        this.selectedFormat = 'pdf';
-        this.uploadMethod = 'upload';
-        this.sampleFiles = [];
-        
-        this.initializeEventListeners();
-        this.loadSampleFiles();
+  constructor() {
+    this.selectedFiles = [];
+    this.selectedFormat = 'pdf';
+    this.uploadMethod = 'upload';
+    this.sampleFiles = [];
+    this.csrfToken = null;
+
+    this.initializeEventListeners();
+    this.loadSampleFiles();
+    this.getCsrfToken();
+  }
+
+  initializeEventListeners() {
+    // Format selection
+    document.querySelectorAll('.format-card').forEach(card => {
+      card.addEventListener('click', () => {
+        this.selectFormat(card.dataset.format);
+      });
+    });
+
+    // Upload method toggle
+    document.querySelectorAll('.toggle-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.switchUploadMethod(btn.dataset.method);
+      });
+    });
+
+    // File upload
+    const fileInput = document.getElementById('fileInput');
+    const uploadArea = document.getElementById('uploadArea');
+
+    uploadArea.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => this.handleFileSelect(e.target.files));
+
+    // Drag and drop
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      this.handleFileSelect(e.dataTransfer.files);
+    });
+
+    // Action buttons
+    document.getElementById('extractBtn').addEventListener('click', () => this.extractQuestions());
+    document.getElementById('previewBtn').addEventListener('click', () => this.previewContent());
+    document.getElementById('cancelExtraction').addEventListener('click', () => this.cancelExtraction());
+
+    // Option changes
+    document.getElementById('includeContext').addEventListener('change', () => this.updateOptions());
+    document.getElementById('questionCount').addEventListener('change', () => this.updateOptions());
+    document.getElementById('difficulty').addEventListener('change', () => this.updateOptions());
+    document.getElementById('extractionMethod').addEventListener('change', () => this.updateOptions());
+
+    document.querySelectorAll('input[name="questionTypes"]').forEach(checkbox => {
+      checkbox.addEventListener('change', () => this.updateOptions());
+    });
+  }
+
+  selectFormat(format) {
+    this.selectedFormat = format;
+
+    // Update UI
+    document.querySelectorAll('.format-card').forEach(card => {
+      card.classList.remove('active');
+    });
+    document.querySelector(`[data-format="${format}"]`).classList.add('active');
+
+    // Update file input accept attribute
+    const fileInput = document.getElementById('fileInput');
+    const acceptMap = {
+      'pdf': '.pdf',
+      'txt': '.txt',
+      'docx': '.docx',
+      'doc': '.doc'
+    };
+
+    if (format === 'all') {
+      fileInput.accept = '.pdf,.txt,.docx,.doc';
+    } else {
+      fileInput.accept = acceptMap[format];
     }
 
-    initializeEventListeners() {
-        // Format selection
-        document.querySelectorAll('.format-card').forEach(card => {
-            card.addEventListener('click', (e) => {
-                this.selectFormat(card.dataset.format);
-            });
-        });
+    this.updateSupportedFormats();
+  }
 
-        // Upload method toggle
-        document.querySelectorAll('.toggle-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                this.switchUploadMethod(btn.dataset.method);
-            });
-        });
+  switchUploadMethod(method) {
+    console.log(`🔄 Switching upload method from '${this.uploadMethod}' to '${method}'`);
+    this.uploadMethod = method;
 
-        // File upload
-        const fileInput = document.getElementById('fileInput');
-        const uploadArea = document.getElementById('uploadArea');
+    // Update toggle buttons
+    document.querySelectorAll('.toggle-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    document.querySelector(`[data-method="${method}"]`).classList.add('active');
 
-        uploadArea.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => this.handleFileSelect(e.target.files));
+    // Show/hide upload methods
+    document.querySelectorAll('.upload-method').forEach(methodEl => {
+      methodEl.classList.remove('active');
+    });
+    document.getElementById(`${method}Method`).classList.add('active');
+  }
 
-        // Drag and drop
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
-        });
+  updateSupportedFormats() {
+    const supportedFormats = document.querySelector('.supported-formats');
+    const formatNames = {
+      'pdf': 'PDF',
+      'txt': 'TXT',
+      'docx': 'DOCX',
+      'doc': 'DOC'
+    };
 
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
-        });
-
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            this.handleFileSelect(e.dataTransfer.files);
-        });
-
-        // Action buttons
-        document.getElementById('extractBtn').addEventListener('click', () => this.extractQuestions());
-        document.getElementById('previewBtn').addEventListener('click', () => this.previewContent());
-        document.getElementById('cancelExtraction').addEventListener('click', () => this.cancelExtraction());
-
-        // Option changes
-        document.getElementById('includeContext').addEventListener('change', () => this.updateOptions());
-        document.getElementById('questionCount').addEventListener('change', () => this.updateOptions());
-        document.getElementById('difficulty').addEventListener('change', () => this.updateOptions());
-        
-        document.querySelectorAll('input[name="questionTypes"]').forEach(checkbox => {
-            checkbox.addEventListener('change', () => this.updateOptions());
-        });
+    if (this.selectedFormat === 'all') {
+      supportedFormats.innerHTML = Object.values(formatNames)
+        .map(name => `<span class="format-tag">${name}</span>`).join('');
+    } else {
+      supportedFormats.innerHTML = `<span class="format-tag">${formatNames[this.selectedFormat]}</span>`;
     }
+  }
 
-    selectFormat(format) {
-        this.selectedFormat = format;
-        
-        // Update UI
-        document.querySelectorAll('.format-card').forEach(card => {
-            card.classList.remove('active');
-        });
-        document.querySelector(`[data-format="${format}"]`).classList.add('active');
+  handleFileSelect(files) {
+    const validFiles = [];
+    const allowedExtensions = this.selectedFormat === 'all'
+      ? ['.pdf', '.txt', '.docx', '.doc']
+      : [`.${this.selectedFormat}`];
 
-        // Update file input accept attribute
-        const fileInput = document.getElementById('fileInput');
-        const acceptMap = {
-            'pdf': '.pdf',
-            'txt': '.txt',
-            'docx': '.docx',
-            'doc': '.doc'
-        };
-        
-        if (format === 'all') {
-            fileInput.accept = '.pdf,.txt,.docx,.doc';
-        } else {
-            fileInput.accept = acceptMap[format];
+    Array.from(files).forEach(file => {
+      const extension = file.name.toLowerCase().substr(file.name.lastIndexOf('.'));
+      if (allowedExtensions.includes(extension)) {
+        // Check if file already selected
+        if (!this.selectedFiles.find(f => f.name === file.name && f.size === file.size)) {
+          validFiles.push({
+            file: file,
+            name: file.name,
+            size: file.size,
+            type: extension.substr(1),
+            id: Date.now() + Math.random()
+          });
         }
+      } else {
+        this.showNotification(`File "${file.name}" is not a supported format.`, 'warning');
+      }
+    });
 
-        this.updateSupportedFormats();
+    this.selectedFiles.push(...validFiles);
+    this.updateSelectedFilesDisplay();
+    this.updateActionButtons();
+  }
+
+  async loadSampleFiles() {
+    console.log('📁 Loading sample files...');
+    try {
+      const response = await fetch('/api/sample-files');
+      if (response.ok) {
+        this.sampleFiles = await response.json();
+        console.log(`✅ Loaded ${this.sampleFiles.length} sample files:`, this.sampleFiles);
+      } else {
+        console.error('❌ Failed to load sample files, using fallback');
+        // Fallback to hardcoded files
+        this.sampleFiles = [
+          { name: 'Sample Quiz 1.pdf', size: '2.5 MB', type: 'pdf', description: 'Mathematics questions' },
+          { name: 'Science Quiz.pdf', size: '1.8 MB', type: 'pdf', description: 'Physics and Chemistry' },
+          { name: 'History Notes.pdf', size: '3.2 MB', type: 'pdf', description: 'World History content' }
+        ];
+      }
+    } catch (error) {
+      console.error('❌ Error loading sample files:', error);
+      // Fallback to hardcoded files
+      this.sampleFiles = [
+        { name: 'Sample Quiz 1.pdf', size: '2.5 MB', type: 'pdf', description: 'Mathematics questions' },
+        { name: 'Science Quiz.pdf', size: '1.8 MB', type: 'pdf', description: 'Physics and Chemistry' },
+        { name: 'History Notes.pdf', size: '3.2 MB', type: 'pdf', description: 'World History content' }
+      ];
     }
 
-    switchUploadMethod(method) {
-        console.log(`🔄 Switching upload method from '${this.uploadMethod}' to '${method}'`);
-        this.uploadMethod = method;
-        
-        // Update toggle buttons
-        document.querySelectorAll('.toggle-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        document.querySelector(`[data-method="${method}"]`).classList.add('active');
+    this.renderSampleFiles();
+  }
 
-        // Show/hide upload methods
-        document.querySelectorAll('.upload-method').forEach(methodEl => {
-            methodEl.classList.remove('active');
-        });
-        document.getElementById(`${method}Method`).classList.add('active');
-    }
-
-    updateSupportedFormats() {
-        const supportedFormats = document.querySelector('.supported-formats');
-        const formatNames = {
-            'pdf': 'PDF',
-            'txt': 'TXT',
-            'docx': 'DOCX',
-            'doc': 'DOC'
-        };
-
-        if (this.selectedFormat === 'all') {
-            supportedFormats.innerHTML = Object.values(formatNames)
-                .map(name => `<span class="format-tag">${name}</span>`).join('');
-        } else {
-            supportedFormats.innerHTML = `<span class="format-tag">${formatNames[this.selectedFormat]}</span>`;
-        }
-    }
-
-    handleFileSelect(files) {
-        const validFiles = [];
-        const allowedExtensions = this.selectedFormat === 'all' 
-            ? ['.pdf', '.txt', '.docx', '.doc']
-            : [`.${this.selectedFormat}`];
-
-        Array.from(files).forEach(file => {
-            const extension = file.name.toLowerCase().substr(file.name.lastIndexOf('.'));
-            if (allowedExtensions.includes(extension)) {
-                // Check if file already selected
-                if (!this.selectedFiles.find(f => f.name === file.name && f.size === file.size)) {
-                    validFiles.push({
-                        file: file,
-                        name: file.name,
-                        size: file.size,
-                        type: extension.substr(1),
-                        id: Date.now() + Math.random()
-                    });
-                }
-            } else {
-                this.showNotification(`File "${file.name}" is not a supported format.`, 'warning');
-            }
-        });
-
-        this.selectedFiles.push(...validFiles);
-        this.updateSelectedFilesDisplay();
-        this.updateActionButtons();
-    }
-
-    async loadSampleFiles() {
-        console.log('📁 Loading sample files...');
-        try {
-            const response = await fetch('/api/sample-files');
-            if (response.ok) {
-                this.sampleFiles = await response.json();
-                console.log(`✅ Loaded ${this.sampleFiles.length} sample files:`, this.sampleFiles);
-            } else {
-                console.error('❌ Failed to load sample files, using fallback');
-                // Fallback to hardcoded files
-                this.sampleFiles = [
-                    { name: 'Sample Quiz 1.pdf', size: '2.5 MB', type: 'pdf', description: 'Mathematics questions' },
-                    { name: 'Science Quiz.pdf', size: '1.8 MB', type: 'pdf', description: 'Physics and Chemistry' },
-                    { name: 'History Notes.pdf', size: '3.2 MB', type: 'pdf', description: 'World History content' }
-                ];
-            }
-        } catch (error) {
-            console.error('❌ Error loading sample files:', error);
-            // Fallback to hardcoded files
-            this.sampleFiles = [
-                { name: 'Sample Quiz 1.pdf', size: '2.5 MB', type: 'pdf', description: 'Mathematics questions' },
-                { name: 'Science Quiz.pdf', size: '1.8 MB', type: 'pdf', description: 'Physics and Chemistry' },
-                { name: 'History Notes.pdf', size: '3.2 MB', type: 'pdf', description: 'World History content' }
-            ];
-        }
-
-        this.renderSampleFiles();
-    }
-
-    renderSampleFiles() {
-        const grid = document.getElementById('sampleFilesGrid');
-        grid.innerHTML = this.sampleFiles.map(file => `
+  renderSampleFiles() {
+    const grid = document.getElementById('sampleFilesGrid');
+    grid.innerHTML = this.sampleFiles.map(file => `
             <div class="sample-file-card" data-file-id="${file.name}">
                 <div class="file-icon">
                     <i class="fas fa-file-${file.type === 'pdf' ? 'pdf' : file.type === 'txt' ? 'alt' : 'word'}"></i>
@@ -202,50 +205,50 @@ class FileSelector {
             </div>
         `).join('');
 
-        // Add click events
-        grid.querySelectorAll('.sample-file-card').forEach(card => {
-            card.addEventListener('click', () => this.toggleSampleFile(card));
-        });
+    // Add click events
+    grid.querySelectorAll('.sample-file-card').forEach(card => {
+      card.addEventListener('click', () => this.toggleSampleFile(card));
+    });
+  }
+
+  toggleSampleFile(card) {
+    const fileId = card.dataset.fileId;
+    const file = this.sampleFiles.find(f => f.name === fileId);
+
+    console.log(`🎯 toggleSampleFile: ${fileId}`, file);
+
+    if (card.classList.contains('selected')) {
+      // Remove from selection
+      card.classList.remove('selected');
+      this.selectedFiles = this.selectedFiles.filter(f => f.name !== fileId);
+      console.log(`➖ Removed file: ${fileId}. Total selected: ${this.selectedFiles.length}`);
+    } else {
+      // Add to selection
+      card.classList.add('selected');
+      this.selectedFiles.push({
+        ...file,
+        id: Date.now() + Math.random(),
+        isSample: true
+      });
+      console.log(`➕ Added file: ${fileId}. Total selected: ${this.selectedFiles.length}`);
     }
 
-    toggleSampleFile(card) {
-        const fileId = card.dataset.fileId;
-        const file = this.sampleFiles.find(f => f.name === fileId);
-        
-        console.log(`🎯 toggleSampleFile: ${fileId}`, file);
-        
-        if (card.classList.contains('selected')) {
-            // Remove from selection
-            card.classList.remove('selected');
-            this.selectedFiles = this.selectedFiles.filter(f => f.name !== fileId);
-            console.log(`➖ Removed file: ${fileId}. Total selected: ${this.selectedFiles.length}`);
-        } else {
-            // Add to selection
-            card.classList.add('selected');
-            this.selectedFiles.push({
-                ...file,
-                id: Date.now() + Math.random(),
-                isSample: true
-            });
-            console.log(`➕ Added file: ${fileId}. Total selected: ${this.selectedFiles.length}`);
-        }
+    this.updateSelectedFilesDisplay();
+    this.updateActionButtons();
+  }
 
-        this.updateSelectedFilesDisplay();
-        this.updateActionButtons();
+  updateSelectedFilesDisplay() {
+    const selectedFilesContainer = document.getElementById('selectedFiles');
+    const filesList = document.getElementById('filesList');
+
+    if (this.selectedFiles.length === 0) {
+      selectedFilesContainer.classList.add('hidden');
+      return;
     }
 
-    updateSelectedFilesDisplay() {
-        const selectedFilesContainer = document.getElementById('selectedFiles');
-        const filesList = document.getElementById('filesList');
+    selectedFilesContainer.classList.remove('hidden');
 
-        if (this.selectedFiles.length === 0) {
-            selectedFilesContainer.classList.add('hidden');
-            return;
-        }
-
-        selectedFilesContainer.classList.remove('hidden');
-        
-        filesList.innerHTML = this.selectedFiles.map(file => `
+    filesList.innerHTML = this.selectedFiles.map(file => `
             <div class="file-item" data-file-id="${file.id}">
                 <div class="file-info">
                     <div class="file-icon">
@@ -261,395 +264,423 @@ class FileSelector {
                 </button>
             </div>
         `).join('');
+  }
+
+  removeFile(fileId) {
+    this.selectedFiles = this.selectedFiles.filter(f => f.id !== fileId);
+
+    // Update sample file UI if it was a sample file
+    const sampleCard = document.querySelector(`[data-file-id="${this.selectedFiles.find(f => f.id === fileId)?.name}"]`);
+    if (sampleCard) {
+      sampleCard.classList.remove('selected');
     }
 
-    removeFile(fileId) {
-        this.selectedFiles = this.selectedFiles.filter(f => f.id !== fileId);
-        
-        // Update sample file UI if it was a sample file
-        const sampleCard = document.querySelector(`[data-file-id="${this.selectedFiles.find(f => f.id === fileId)?.name}"]`);
-        if (sampleCard) {
-            sampleCard.classList.remove('selected');
-        }
+    this.updateSelectedFilesDisplay();
+    this.updateActionButtons();
+  }
 
-        this.updateSelectedFilesDisplay();
-        this.updateActionButtons();
+  updateActionButtons() {
+    const extractBtn = document.getElementById('extractBtn');
+    const previewBtn = document.getElementById('previewBtn');
+    const extractionOptions = document.getElementById('extractionOptions');
+
+    const hasFiles = this.selectedFiles.length > 0;
+
+    console.log(`🔍 updateActionButtons: hasFiles=${hasFiles}, selectedFiles=${this.selectedFiles.length}, uploadMethod=${this.uploadMethod}`);
+
+    extractBtn.disabled = !hasFiles;
+    previewBtn.disabled = !hasFiles;
+
+    if (hasFiles) {
+      extractionOptions.classList.remove('hidden');
+      console.log('✅ Extraction options shown');
+    } else {
+      extractionOptions.classList.add('hidden');
+      console.log('❌ Extraction options hidden');
+    }
+  }    updateOptions() {
+    // This method can be used to validate and update extraction options
+    console.log('Options updated');
+  }
+
+  formatFileSize(bytes) {
+    if (typeof bytes === 'string') {
+      return bytes;
+    } // Already formatted
+    if (bytes === 0) {
+      return '0 Bytes';
     }
 
-    updateActionButtons() {
-        const extractBtn = document.getElementById('extractBtn');
-        const previewBtn = document.getElementById('previewBtn');
-        const extractionOptions = document.getElementById('extractionOptions');
-        
-        const hasFiles = this.selectedFiles.length > 0;
-        
-        console.log(`🔍 updateActionButtons: hasFiles=${hasFiles}, selectedFiles=${this.selectedFiles.length}, uploadMethod=${this.uploadMethod}`);
-        
-        extractBtn.disabled = !hasFiles;
-        previewBtn.disabled = !hasFiles;
-        
-        if (hasFiles) {
-            extractionOptions.classList.remove('hidden');
-            console.log('✅ Extraction options shown');
-        } else {
-            extractionOptions.classList.add('hidden');
-            console.log('❌ Extraction options hidden');
-        }
-    }    updateOptions() {
-        // This method can be used to validate and update extraction options
-        console.log('Options updated');
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  async previewContent() {
+    if (this.selectedFiles.length === 0) {
+      this.showNotification('Please select files first.', 'warning');
+      return;
     }
 
-    formatFileSize(bytes) {
-        if (typeof bytes === 'string') return bytes; // Already formatted
-        if (bytes === 0) return '0 Bytes';
-        
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    try {
+      this.showPreviewModal();
+
+      if (this.uploadMethod === 'upload' && this.selectedFiles.length > 0) {
+        // Preview uploaded files
+        await this.previewUploadedFiles();
+      } else if (this.uploadMethod === 'samples') {
+        // Preview sample files
+        await this.previewSampleFiles();
+      }
+    } catch (error) {
+      console.error('Preview failed:', error);
+      this.showNotification('Preview failed. Please try again.', 'error');
+      this.hidePreviewModal();
+    }
+  }
+
+  showPreviewModal() {
+    const modal = document.getElementById('previewModal');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+
+    // Add event listeners for closing
+    document.getElementById('closePreview').addEventListener('click', () => this.hidePreviewModal());
+    document.getElementById('closePreviewBtn').addEventListener('click', () => this.hidePreviewModal());
+
+    // Close on overlay click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        this.hidePreviewModal();
+      }
+    });
+  }
+
+  hidePreviewModal() {
+    const modal = document.getElementById('previewModal');
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
+
+  async extractQuestions() {
+    console.log('🚀 extractQuestions called');
+    console.log(`Selected files: ${this.selectedFiles.length}`, this.selectedFiles);
+    console.log(`Upload method: ${this.uploadMethod}`);
+
+    if (this.selectedFiles.length === 0) {
+      console.warn('⚠️ No files selected');
+      this.showNotification('Please select files first.', 'warning');
+      return;
     }
 
-    async previewContent() {
-        if (this.selectedFiles.length === 0) {
-            this.showNotification('Please select files first.', 'warning');
-            return;
-        }
+    // Get extraction options
+    const options = {
+      questionCount: document.getElementById('questionCount').value,
+      includeContext: document.getElementById('includeContext').checked,
+      difficulty: document.getElementById('difficulty').value,
+      extractionMethod: document.getElementById('extractionMethod').value,
+      questionTypes: Array.from(document.querySelectorAll('input[name="questionTypes"]:checked'))
+        .map(cb => cb.value)
+    };
 
-        try {
-            // Create preview modal
-            this.showPreviewModal();
-            
-            if (this.uploadMethod === 'upload' && this.selectedFiles.length > 0) {
-                // Preview uploaded files
-                await this.previewUploadedFiles();
-            } else if (this.uploadMethod === 'samples') {
-                // Preview sample files
-                await this.previewSampleFiles();
-            }
-        } catch (error) {
-            console.error('Preview failed:', error);
-            this.showNotification('Preview failed. Please try again.', 'error');
-            this.hidePreviewModal();
-        }
+    console.log('🎯 Extraction options:', options);
+    console.log('📂 Selected files:', this.selectedFiles);
+
+    this.showProgressModal();
+
+    try {
+      // Determine extraction method
+      if (options.extractionMethod === 'gemini') {
+        console.log('🤖 Using Gemini AI extraction');
+        await this.extractWithGemini(options);
+      } else if (this.uploadMethod === 'samples') {
+        console.log('📁 Using sample files method (uploadMethod=samples)');
+        await this.extractFromSamples(options);
+      } else if (this.uploadMethod === 'upload' && this.selectedFiles.length > 0) {
+        console.log('📤 Using upload method (uploadMethod=upload, files selected)');
+        await this.uploadAndExtract(options);
+      } else {
+        console.log('� Defaulting to sample files method (no valid upload files)');
+        // Default to sample files if upload method but no files
+        await this.extractFromSamples(options);
+      }
+
+      console.log('🎉 Extraction completed, navigating to exam...');
+      // Navigate to exam interface
+      window.location.href = '/exam';
+    } catch (error) {
+      console.error('❌ Extraction failed:', error);
+      this.showNotification('Extraction failed. Please try again.', 'error');
+      this.hideProgressModal();
+    }
+  }
+
+  async uploadAndExtract(options) {
+    console.log('🚀 Starting upload and extract process...');
+    console.log('📁 Selected files count:', this.selectedFiles.length);
+    console.log('📁 Selected files:', this.selectedFiles);
+
+    if (this.selectedFiles.length === 0) {
+      console.warn('⚠️ No files selected for upload');
+      throw new Error('No files selected for upload');
     }
 
-    async extractQuestions() {
-        console.log('🚀 extractQuestions called');
-        console.log(`Selected files: ${this.selectedFiles.length}`, this.selectedFiles);
-        console.log(`Upload method: ${this.uploadMethod}`);
-        
-        if (this.selectedFiles.length === 0) {
-            console.warn('⚠️ No files selected');
-            this.showNotification('Please select files first.', 'warning');
-            return;
-        }
-
-        // Get extraction options
-        const options = {
-            questionCount: document.getElementById('questionCount').value,
-            includeContext: document.getElementById('includeContext').checked,
-            difficulty: document.getElementById('difficulty').value,
-            questionTypes: Array.from(document.querySelectorAll('input[name="questionTypes"]:checked'))
-                .map(cb => cb.value)
-        };
-
-        console.log('🎯 Extraction options:', options);
-        console.log('📂 Selected files:', this.selectedFiles);
-
-        this.showProgressModal();
-        
-        try {
-            // Determine extraction method based on upload method and files
-            if (this.uploadMethod === 'samples') {
-                console.log('📁 Using sample files method (uploadMethod=samples)');
-                await this.extractFromSamples(options);
-            } else if (this.uploadMethod === 'upload' && this.selectedFiles.length > 0) {
-                console.log('📤 Using upload method (uploadMethod=upload, files selected)');
-                await this.uploadAndExtract(options);
-            } else {
-                console.log('� Defaulting to sample files method (no valid upload files)');
-                // Default to sample files if upload method but no files
-                await this.extractFromSamples(options);
-            }
-            
-            console.log('🎉 Extraction completed, navigating to exam...');
-            // Navigate to exam interface
-            window.location.href = '/exam';
-            
-        } catch (error) {
-            console.error('❌ Extraction failed:', error);
-            this.showNotification('Extraction failed. Please try again.', 'error');
-            this.hideProgressModal();
-        }
+    // Step 1: Upload files
+    const formData = new FormData();
+    for (const fileObj of this.selectedFiles) {
+      console.log(`📄 Adding file to upload: ${fileObj.name} (${fileObj.size} bytes, type: ${fileObj.type})`);
+      formData.append('files', fileObj.file);
     }
 
-    async uploadAndExtract(options) {
-        console.log('🚀 Starting upload and extract process...');
-        console.log('📁 Selected files count:', this.selectedFiles.length);
-        console.log('📁 Selected files:', this.selectedFiles);
-        
-        if (this.selectedFiles.length === 0) {
-            console.warn('⚠️ No files selected for upload');
-            throw new Error('No files selected for upload');
-        }
-        
-        // Step 1: Upload files
-        const formData = new FormData();
-        for (const file of this.selectedFiles) {
-            console.log(`📄 Adding file to upload: ${file.name} (${file.size} bytes, type: ${file.type})`);
-            formData.append('files', file);
-        }
-        
-        console.log('📤 Uploading files...');
-        const uploadResponse = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData
-        });
-        
-        if (!uploadResponse.ok) {
-            const errorText = await uploadResponse.text();
-            console.error('❌ Upload failed:', errorText);
-            throw new Error(`Failed to upload files: ${errorText}`);
-        }
-        
-        const uploadResult = await uploadResponse.json();
-        console.log('✅ Upload successful:', uploadResult);
-        
-        // Step 2: Start extraction with progress simulation
-        await this.simulateExtraction();
-        
-        // Step 3: Trigger actual backend extraction
-        console.log('🎯 Starting backend extraction with options:', options);
-        const extractionResponse = await fetch('/api/start-extraction', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(options)
-        });
-        
-        if (!extractionResponse.ok) {
-            const errorText = await extractionResponse.text();
-            console.error('❌ Extraction start failed:', errorText);
-            throw new Error(`Failed to start extraction: ${errorText}`);
-        }
-        
-        const extractionResult = await extractionResponse.json();
-        console.log('✅ Extraction started successfully:', extractionResult);
+    console.log('📤 Uploading files...');
+    console.log('🔐 CSRF token for upload:', this.csrfToken ? 'PRESENT' : 'MISSING');
+    const uploadResponse = await fetch('/api/upload', {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': this.csrfToken
+      },
+      body: formData
+    });
+
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      console.error('❌ Upload failed:', errorText);
+      throw new Error(`Failed to upload files: ${errorText}`);
     }
 
-    async extractFromSamples(options) {
-        console.log('📁 Starting sample files extraction...');
-        console.log('Sample files selected:', this.selectedFiles);
-        
-        // Use existing sample files for extraction
-        await this.simulateExtraction();
-        
-        // Trigger backend extraction with samples
-        console.log('🎯 Starting backend extraction with samples and options:', options);
-        const extractionResponse = await fetch('/api/start-extraction', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                ...options,
-                useSamples: true
-            })
-        });
-        
-        if (!extractionResponse.ok) {
-            const errorText = await extractionResponse.text();
-            console.error('❌ Sample extraction start failed:', errorText);
-            throw new Error(`Failed to start extraction: ${errorText}`);
-        }
-        
-        const extractionResult = await extractionResponse.json();
-        console.log('✅ Sample extraction started successfully:', extractionResult);
+    const uploadResult = await uploadResponse.json();
+    console.log('✅ Upload successful:', uploadResult);
+
+    // Step 2: Start extraction with progress simulation
+    await this.simulateExtraction();
+
+    // Step 3: Trigger actual backend extraction
+    console.log('🎯 Starting backend extraction with options:', options);
+    const extractionResponse = await fetch('/api/start-extraction', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': this.csrfToken
+      },
+      body: JSON.stringify(options)
+    });
+
+    if (!extractionResponse.ok) {
+      const errorText = await extractionResponse.text();
+      console.error('❌ Extraction start failed:', errorText);
+      throw new Error(`Failed to start extraction: ${errorText}`);
     }
 
-    showProgressModal() {
-        const modal = document.getElementById('progressModal');
-        modal.classList.remove('hidden');
-        modal.style.display = 'flex';
+    const extractionResult = await extractionResponse.json();
+    console.log('✅ Extraction started successfully:', extractionResult);
+  }
+
+  async extractFromSamples(options) {
+    console.log('📁 Starting sample files extraction...');
+    console.log('Sample files selected:', this.selectedFiles);
+
+    // Use existing sample files for extraction
+    await this.simulateExtraction();
+
+    // Trigger backend extraction with samples
+    console.log('🎯 Starting backend extraction with samples and options:', options);
+    const extractionResponse = await fetch('/api/start-extraction', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': this.csrfToken
+      },
+      body: JSON.stringify({
+        ...options,
+        useSamples: true
+      })
+    });
+
+    if (!extractionResponse.ok) {
+      const errorText = await extractionResponse.text();
+      console.error('❌ Sample extraction start failed:', errorText);
+      throw new Error(`Failed to start extraction: ${errorText}`);
     }
 
-    hideProgressModal() {
-        const modal = document.getElementById('progressModal');
-        modal.classList.add('hidden');
-        modal.style.display = 'none';
+    const extractionResult = await extractionResponse.json();
+    console.log('✅ Sample extraction started successfully:', extractionResult);
+  }
+
+  async extractWithGemini() {
+    console.log('🤖 Starting Gemini AI extraction...');
+    console.log('📁 Selected files count:', this.selectedFiles.length);
+    console.log('📁 Selected files:', this.selectedFiles);
+
+    if (this.selectedFiles.length === 0) {
+      console.warn('⚠️ No files selected for Gemini extraction');
+      throw new Error('No files selected for Gemini extraction');
     }
 
-    async simulateExtraction() {
-        const progressFill = document.getElementById('progressFill');
-        const progressPercentage = document.getElementById('progressPercentage');
-        const progressMessage = document.getElementById('progressMessage');
-        const questionsFound = document.getElementById('questionsFound');
-        const filesProcessed = document.getElementById('filesProcessed');
-        const currentFile = document.getElementById('currentFile');
-
-        const steps = [
-            { progress: 10, message: 'Initializing extraction...', questions: 0, files: 0 },
-            { progress: 25, message: 'Processing file formats...', questions: 5, files: 1 },
-            { progress: 45, message: 'Extracting text content...', questions: 15, files: 2 },
-            { progress: 65, message: 'Analyzing question patterns...', questions: 28, files: 3 },
-            { progress: 80, message: 'Generating options...', questions: 42, files: 4 },
-            { progress: 95, message: 'Finalizing questions...', questions: 50, files: this.selectedFiles.length },
-            { progress: 100, message: 'Extraction complete!', questions: 50, files: this.selectedFiles.length }
-        ];
-
-        for (let i = 0; i < steps.length; i++) {
-            const step = steps[i];
-            
-            progressFill.style.width = `${step.progress}%`;
-            progressPercentage.textContent = `${step.progress}%`;
-            progressMessage.textContent = step.message;
-            questionsFound.textContent = step.questions;
-            filesProcessed.textContent = step.files;
-            
-            if (i < this.selectedFiles.length) {
-                currentFile.textContent = this.selectedFiles[i]?.name || 'Processing...';
-            } else {
-                currentFile.textContent = 'All files processed';
-            }
-
-            await new Promise(resolve => setTimeout(resolve, 800));
-        }
+    // Step 1: Upload files to Gemini extraction endpoint
+    const formData = new FormData();
+    for (const fileObj of this.selectedFiles) {
+      console.log(`📄 Adding file to Gemini upload: ${fileObj.name} (${fileObj.size} bytes, type: ${fileObj.type})`);
+      formData.append('files', fileObj.file);
     }
 
-    cancelExtraction() {
-        this.hideProgressModal();
-        this.showNotification('Extraction cancelled.', 'info');
+    console.log('🚀 Sending files to Gemini AI for extraction...');
+    const geminiResponse = await fetch('/api/extract-gemini', {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': this.csrfToken
+      },
+      body: formData
+    });
+
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error('❌ Gemini extraction failed:', errorText);
+      throw new Error(`Gemini extraction failed: ${errorText}`);
     }
 
-    showNotification(message, type = 'info') {
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        notification.innerHTML = `
+    const geminiResult = await geminiResponse.json();
+    console.log('✅ Gemini extraction successful:', geminiResult);
+
+    // Step 2: Simulate processing time for UI feedback
+    await this.simulateExtraction();
+
+    // Step 3: Store the results and navigate to exam
+    if (geminiResult.success && geminiResult.questions) {
+      // Store questions in localStorage for the exam interface
+      localStorage.setItem('extractedQuestions', JSON.stringify(geminiResult.questions));
+      localStorage.setItem('extractionMethod', 'gemini_ai');
+      console.log(`🎉 Gemini extracted ${geminiResult.total_questions} questions successfully!`);
+    } else {
+      throw new Error('No questions extracted by Gemini AI');
+    }
+  }
+
+  showProgressModal() {
+    const modal = document.getElementById('progressModal');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  }
+
+  hideProgressModal() {
+    const modal = document.getElementById('progressModal');
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
+
+  async simulateExtraction() {
+    const progressFill = document.getElementById('progressFill');
+    const progressPercentage = document.getElementById('progressPercentage');
+    const progressMessage = document.getElementById('progressMessage');
+    const questionsFound = document.getElementById('questionsFound');
+    const filesProcessed = document.getElementById('filesProcessed');
+    const currentFile = document.getElementById('currentFile');
+
+    const steps = [
+      { progress: 10, message: 'Initializing extraction...', questions: 0, files: 0 },
+      { progress: 25, message: 'Processing file formats...', questions: 5, files: 1 },
+      { progress: 45, message: 'Extracting text content...', questions: 15, files: 2 },
+      { progress: 65, message: 'Analyzing question patterns...', questions: 28, files: 3 },
+      { progress: 80, message: 'Generating options...', questions: 42, files: 4 },
+      { progress: 95, message: 'Finalizing questions...', questions: 50, files: this.selectedFiles.length },
+      { progress: 100, message: 'Extraction complete!', questions: 50, files: this.selectedFiles.length }
+    ];
+
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i];
+
+      progressFill.style.width = `${step.progress}%`;
+      progressPercentage.textContent = `${step.progress}%`;
+      progressMessage.textContent = step.message;
+      questionsFound.textContent = step.questions;
+      filesProcessed.textContent = step.files;
+
+      if (i < this.selectedFiles.length) {
+        currentFile.textContent = this.selectedFiles[i]?.name || 'Processing...';
+      } else {
+        currentFile.textContent = 'All files processed';
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 800));
+    }
+  }
+
+  cancelExtraction() {
+    this.hideProgressModal();
+    this.showNotification('Extraction cancelled.', 'info');
+  }
+
+  showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
             <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : type === 'error' ? 'times-circle' : 'info-circle'}"></i>
             <span>${message}</span>
         `;
-        
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.classList.add('show');
-        }, 100);
-        
-        setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => {
-                document.body.removeChild(notification);
-            }, 300);
-        }, 3000);
-    }
 
-    showPreviewModal() {
-        let previewModal = document.getElementById('previewModal');
-        if (!previewModal) {
-            previewModal = this.createPreviewModal();
-        }
-        previewModal.classList.remove('hidden');
-        previewModal.style.display = 'flex';
-    }
+    document.body.appendChild(notification);
 
-    hidePreviewModal() {
-        const previewModal = document.getElementById('previewModal');
-        if (previewModal) {
-            previewModal.classList.add('hidden');
-            previewModal.style.display = 'none';
-        }
-    }
+    setTimeout(() => {
+      notification.classList.add('show');
+    }, 100);
 
-    createPreviewModal() {
-        const modal = document.createElement('div');
-        modal.id = 'previewModal';
-        modal.className = 'modal hidden';
-        modal.innerHTML = `
-            <div class="modal-content preview-modal">
-                <div class="modal-header">
-                    <h3><i class="fas fa-eye"></i> Content Preview</h3>
-                    <button type="button" class="close-btn" onclick="document.getElementById('previewModal').style.display='none'">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="preview-tabs">
-                        <button class="tab-btn active" data-tab="content">
-                            <i class="fas fa-file-text"></i> Content
-                        </button>
-                        <button class="tab-btn" data-tab="metadata">
-                            <i class="fas fa-info-circle"></i> Metadata
-                        </button>
-                    </div>
-                    <div class="preview-content">
-                        <div class="tab-content active" id="contentTab">
-                            <div class="preview-text" id="previewText">
-                                Loading content...
-                            </div>
-                        </div>
-                        <div class="tab-content" id="metadataTab">
-                            <div class="metadata-info" id="metadataInfo">
-                                Loading metadata...
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('previewModal').style.display='none'">
-                        Close
-                    </button>
-                    <button type="button" class="btn btn-primary" onclick="fileSelector.extractQuestions()">
-                        <i class="fas fa-magic"></i> Extract Questions
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-        
-        // Add tab switching functionality
-        modal.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                modal.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                modal.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                btn.classList.add('active');
-                modal.querySelector(`#${btn.dataset.tab}Tab`).classList.add('active');
-            });
+    setTimeout(() => {
+      notification.classList.remove('show');
+      setTimeout(() => {
+        document.body.removeChild(notification);
+      }, 300);
+    }, 3000);
+  }
+
+  showPreviewModal() {
+    let previewModal = document.getElementById('previewModal');
+    if (!previewModal) {
+      previewModal = this.createPreviewModal();
+    }
+    previewModal.classList.remove('hidden');
+    previewModal.style.display = 'flex';
+  }
+
+  hidePreviewModal() {
+    const previewModal = document.getElementById('previewModal');
+    if (previewModal) {
+      previewModal.classList.add('hidden');
+      previewModal.style.display = 'none';
+    }
+  }
+
+  async previewUploadedFiles() {
+    const previewText = document.getElementById('previewText');
+    const metadataInfo = document.getElementById('metadataInfo');
+
+    // Show loading state
+    previewText.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading content...</div>';
+    metadataInfo.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading metadata...</div>';
+
+    let allContent = '';
+    const allMetadata = [];
+
+    for (const fileObj of this.selectedFiles) {
+      try {
+        const content = await this.extractFileContent(fileObj.file);
+        allContent += `\n\n=== ${fileObj.name} ===\n\n${content}`;
+
+        allMetadata.push({
+          name: fileObj.name,
+          size: this.formatFileSize(fileObj.size),
+          type: fileObj.type || 'Unknown',
+          lastModified: new Date(fileObj.file.lastModified).toLocaleString()
         });
-        
-        return modal;
+      } catch (error) {
+        console.error(`Error reading file ${fileObj.name}:`, error);
+        allContent += `\n\n=== ${fileObj.name} ===\n\nError reading file: ${error.message}`;
+      }
     }
 
-    async previewUploadedFiles() {
-        const previewText = document.getElementById('previewText');
-        const metadataInfo = document.getElementById('metadataInfo');
-        
-        let allContent = '';
-        let allMetadata = [];
-        
-        for (const file of this.selectedFiles) {
-            try {
-                const content = await this.extractFileContent(file);
-                allContent += `\\n\\n=== ${file.name} ===\\n\\n${content}`;
-                
-                allMetadata.push({
-                    name: file.name,
-                    size: this.formatFileSize(file.size),
-                    type: file.type || 'Unknown',
-                    lastModified: new Date(file.lastModified).toLocaleString()
-                });
-            } catch (error) {
-                console.error(`Error reading file ${file.name}:`, error);
-                allContent += `\\n\\n=== ${file.name} ===\\n\\nError reading file: ${error.message}`;
-            }
-        }
-        
-        previewText.innerHTML = `<pre>${this.escapeHtml(allContent.substring(0, 5000))}${allContent.length > 5000 ? '\\n\\n... (content truncated)' : ''}</pre>`;
-        
-        metadataInfo.innerHTML = allMetadata.map(meta => `
+    previewText.innerHTML = `<pre>${this.escapeHtml(allContent.substring(0, 5000))}${allContent.length > 5000 ? '\n\n... (content truncated)' : ''}</pre>`;
+
+    metadataInfo.innerHTML = allMetadata.map(meta => `
             <div class="metadata-item">
                 <h4><i class="fas fa-file"></i> ${meta.name}</h4>
                 <p><strong>Size:</strong> ${meta.size}</p>
@@ -657,20 +688,20 @@ class FileSelector {
                 <p><strong>Modified:</strong> ${meta.lastModified}</p>
             </div>
         `).join('');
-    }
+  }
 
-    async previewSampleFiles() {
-        const previewText = document.getElementById('previewText');
-        const metadataInfo = document.getElementById('metadataInfo');
-        
-        try {
-            const response = await fetch('/api/preview-samples');
-            const data = await response.json();
-            
-            if (data.success) {
-                previewText.innerHTML = `<pre>${this.escapeHtml(data.content.substring(0, 5000))}${data.content.length > 5000 ? '\\n\\n... (content truncated)' : ''}</pre>`;
-                
-                metadataInfo.innerHTML = data.metadata.map(meta => `
+  async previewSampleFiles() {
+    const previewText = document.getElementById('previewText');
+    const metadataInfo = document.getElementById('metadataInfo');
+
+    try {
+      const response = await fetch('/api/preview-samples');
+      const data = await response.json();
+
+      if (data.success) {
+        previewText.innerHTML = `<pre>${this.escapeHtml(data.content.substring(0, 5000))}${data.content.length > 5000 ? '\\n\\n... (content truncated)' : ''}</pre>`;
+
+        metadataInfo.innerHTML = data.metadata.map(meta => `
                     <div class="metadata-item">
                         <h4><i class="fas fa-file-pdf"></i> ${meta.name}</h4>
                         <p><strong>Size:</strong> ${meta.size}</p>
@@ -678,43 +709,89 @@ class FileSelector {
                         <p><strong>Modified:</strong> ${meta.lastModified}</p>
                     </div>
                 `).join('');
-            } else {
-                throw new Error(data.message || 'Failed to load sample files');
-            }
+      } else {
+        throw new Error(data.message || 'Failed to load sample files');
+      }
+    } catch (error) {
+      previewText.innerHTML = `<div class="error">Failed to load sample files: ${error.message}</div>`;
+      metadataInfo.innerHTML = '<div class="error">No metadata available</div>';
+    }
+  }
+
+  async previewSampleFiles() {
+    const previewText = document.getElementById('previewText');
+    const metadataInfo = document.getElementById('metadataInfo');
+
+    // Show loading state
+    previewText.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading sample files...</div>';
+    metadataInfo.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading metadata...</div>';
+
+    try {
+      const response = await fetch('/api/preview-samples');
+      const data = await response.json();
+
+      if (data.success) {
+        previewText.innerHTML = `<pre>${this.escapeHtml(data.content.substring(0, 5000))}${data.content.length > 5000 ? '\n\n... (content truncated)' : ''}</pre>`;
+
+        metadataInfo.innerHTML = data.metadata.map(meta => `
+                    <div class="metadata-item">
+                        <h4><i class="fas fa-file"></i> ${meta.name}</h4>
+                        <p><strong>Size:</strong> ${meta.size}</p>
+                        <p><strong>Type:</strong> ${meta.type}</p>
+                        <p><strong>Modified:</strong> ${meta.lastModified}</p>
+                    </div>
+                `).join('');
+      } else {
+        throw new Error(data.message || 'Failed to load sample files');
+      }
+    } catch (error) {
+      previewText.innerHTML = `<div class="error">Failed to load sample files: ${error.message}</div>`;
+      metadataInfo.innerHTML = '<div class="error">No metadata available</div>';
+    }
+  }
+
+  async extractFileContent(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+            resolve(e.target.result);
+          } else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+            resolve('PDF content preview not available in browser. Content will be extracted on server.');
+          } else if (file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
+            resolve('Word document content preview not available in browser. Content will be extracted on server.');
+          } else {
+            resolve('File content preview not available for this format.');
+          }
         } catch (error) {
-            previewText.innerHTML = `<div class="error">Failed to load sample files: ${error.message}</div>`;
-            metadataInfo.innerHTML = '<div class="error">No metadata available</div>';
+          reject(error);
         }
-    }
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsText(file);
+    });
+  }
 
-    async extractFileContent(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
-                        resolve(e.target.result);
-                    } else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-                        resolve('PDF content preview not available in browser. Content will be extracted on server.');
-                    } else if (file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
-                        resolve('Word document content preview not available in browser. Content will be extracted on server.');
-                    } else {
-                        resolve('File content preview not available for this format.');
-                    }
-                } catch (error) {
-                    reject(error);
-                }
-            };
-            reader.onerror = () => reject(new Error('Failed to read file'));
-            reader.readAsText(file);
-        });
-    }
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
 
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+  async getCsrfToken() {
+    try {
+      console.log('🔐 Requesting CSRF token...');
+      const response = await fetch('/api/csrf-token');
+      const data = await response.json();
+      this.csrfToken = data.csrf_token;
+      console.log('🔐 CSRF token obtained:', this.csrfToken ? 'YES' : 'NO');
+      console.log('🔐 CSRF token value:', this.csrfToken);
+    } catch (error) {
+      console.error('❌ Failed to get CSRF token:', error);
+      this.csrfToken = null;
     }
+  }
 }
 
 // Notification styles (add to CSS)
@@ -787,7 +864,6 @@ styleSheet.textContent = notificationStyles;
 document.head.appendChild(styleSheet);
 
 // Initialize file selector
-let fileSelector;
 document.addEventListener('DOMContentLoaded', () => {
-    fileSelector = new FileSelector();
+  new FileSelector();
 });

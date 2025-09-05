@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
+    <!-- Skip Link for Accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
     <!-- Floating Particles -->
     <div class="floating-particles">
         <div class="particle particle-1"><i class="fas fa-graduation-cap"></i></div>
@@ -71,10 +73,10 @@
     <!-- Main Exam Interface -->
     <div class="exam-container exam-container-hidden" id="examContainer">
         <!-- Header -->
-        <header class="exam-header">
+        <header class="exam-header" role="banner">
             <div class="header-left">
                 <div class="exam-title">
-                    <i class="fas fa-graduation-cap"></i>
+                    <i class="fas fa-graduation-cap" aria-hidden="true"></i>
                     <span>PDF Quiz Examination</span>
                 </div>
                 <div class="exam-info">
@@ -82,53 +84,57 @@
                 </div>
             </div>
             <div class="header-center">
-                <div class="progress-container">
+                <div class="progress-container" role="progressbar" aria-valuemin="1" aria-valuemax="100" aria-valuenow="1" aria-label="Exam progress">
                     <div class="progress-bar">
                         <div class="progress-fill" id="progressBar"></div>
                     </div>
                     <div class="progress-text">
-                        Question <span id="currentQuestion">1</span> of <span id="totalQuestions">100</span>
+                        Question <span id="currentQuestion" aria-live="polite">1</span> of <span id="totalQuestions">100</span>
                     </div>
                 </div>
             </div>
             <div class="header-right">
                 <div class="timer-container">
-                    <i class="fas fa-clock"></i>
-                    <span class="timer" id="timer">01:30:00</span>
+                    <i class="fas fa-clock" aria-hidden="true"></i>
+                    <span class="timer" id="timer" role="timer" aria-live="polite" aria-label="Time remaining">01:30:00</span>
                 </div>
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                    <i class="fas fa-moon" aria-hidden="true"></i>
+                    <i class="fas fa-sun" aria-hidden="true"></i>
+                </button>
             </div>
         </header>
 
         <!-- Main Content -->
-        <main class="main-content">
+        <main class="main-content" id="main-content">
             <!-- Question Section -->
-            <section class="question-section">
+            <section class="question-section" role="main" aria-labelledby="question-header">
                 <div class="question-container">
-                    <div class="question-header">
-                        <span class="question-number">Question <span id="currentQuestionNum">1</span></span>
+                    <div class="question-header" id="question-header">
+                        <span class="question-number">Question <span id="currentQuestionNum" aria-live="polite">1</span></span>
                         <div class="question-actions">
-                            <button class="action-btn" id="markBtn">
-                                <i class="fas fa-bookmark"></i>
+                            <button class="action-btn" id="markBtn" aria-label="Mark current question for review" aria-pressed="false">
+                                <i class="fas fa-bookmark" aria-hidden="true"></i>
                                 Mark for Review
                             </button>
                         </div>
                     </div>
                     
-                    <div class="question-text" id="questionText">
+                    <div class="question-text" id="questionText" role="article" aria-live="polite">
                         Loading question...
                     </div>
                     
-                    <div class="options-container" id="optionsContainer">
+                    <div class="options-container" id="optionsContainer" role="radiogroup" aria-labelledby="questionText">
                         <!-- Options will be loaded dynamically -->
                     </div>
                     
                     <div class="question-controls">
-                        <button class="control-btn secondary" id="clearBtn">
-                            <i class="fas fa-eraser"></i>
+                        <button class="control-btn secondary" id="clearBtn" aria-label="Clear your answer for this question">
+                            <i class="fas fa-eraser" aria-hidden="true"></i>
                             Clear Response
                         </button>
-                        <button class="control-btn primary" id="saveBtn">
-                            <i class="fas fa-save"></i>
+                        <button class="control-btn primary" id="saveBtn" aria-label="Save your answer and go to next question">
+                            <i class="fas fa-save" aria-hidden="true"></i>
                             Save & Next
                         </button>
                     </div>
@@ -136,44 +142,45 @@
             </section>
 
             <!-- Navigation Panel -->
-            <aside class="navigation-panel">
-                <div class="nav-header">
-                    <h3><i class="fas fa-list"></i> Question Navigator</h3>
+            <aside class="navigation-panel" role="complementary" aria-labelledby="nav-header">
+                <div class="nav-header" id="nav-header">
+                    <h3><i class="fas fa-list" aria-hidden="true"></i> Question Navigator</h3>
                     <div class="nav-stats">
                         <div class="stat-item">
-                            <span class="stat-number" id="answeredCount">0</span>
+                            <span class="stat-number" id="answeredCount" aria-label="Number of answered questions">0</span>
                             <span class="stat-label">Answered</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-number" id="markedCount">0</span>
+                            <span class="stat-number" id="markedCount" aria-label="Number of marked questions">0</span>
                             <span class="stat-label">Marked</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-number" id="totalCount">100</span>
+                            <span class="stat-number" id="totalCount" aria-label="Total number of questions">100</span>
                             <span class="stat-label">Total</span>
                         </div>
                     </div>
                 </div>
                 
-                <div class="question-navigator" id="questionNavigator">
+                <div class="question-navigator" id="questionNavigator" role="tablist" aria-label="Question navigation grid">
                     <!-- Question buttons will be generated dynamically -->
                 </div>
                 
-                <div class="nav-legend">
+                <div class="nav-legend" role="region" aria-labelledby="legend-header">
+                    <h4 id="legend-header" class="sr-only">Question Status Legend</h4>
                     <div class="legend-item">
-                        <div class="legend-color current"></div>
+                        <div class="legend-color current" aria-hidden="true"></div>
                         <span>Current</span>
                     </div>
                     <div class="legend-item">
-                        <div class="legend-color answered"></div>
+                        <div class="legend-color answered" aria-hidden="true"></div>
                         <span>Answered</span>
                     </div>
                     <div class="legend-item">
-                        <div class="legend-color marked"></div>
+                        <div class="legend-color marked" aria-hidden="true"></div>
                         <span>Marked</span>
                     </div>
                     <div class="legend-item">
-                        <div class="legend-color unanswered"></div>
+                        <div class="legend-color unanswered" aria-hidden="true"></div>
                         <span>Not Visited</span>
                     </div>
                 </div>
@@ -181,20 +188,20 @@
         </main>
 
         <!-- Footer -->
-        <footer class="exam-footer">
+        <footer class="exam-footer" role="contentinfo">
             <div class="footer-left">
-                <button class="nav-btn secondary" id="prevBtn">
-                    <i class="fas fa-chevron-left"></i>
+                <button class="nav-btn secondary" id="prevBtn" aria-label="Go to previous question">
+                    <i class="fas fa-chevron-left" aria-hidden="true"></i>
                     Previous
                 </button>
-                <button class="nav-btn primary" id="nextBtn">
+                <button class="nav-btn primary" id="nextBtn" aria-label="Go to next question">
                     Next
-                    <i class="fas fa-chevron-right"></i>
+                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
                 </button>
             </div>
             <div class="footer-right">
-                <button class="submit-btn" id="submitBtn">
-                    <i class="fas fa-paper-plane"></i>
+                <button class="submit-btn" id="submitBtn" aria-label="Submit your exam - this action cannot be undone">
+                    <i class="fas fa-paper-plane" aria-hidden="true"></i>
                     Submit Exam
                 </button>
             </div>
@@ -261,6 +268,68 @@
         </div>
     </div>
 
+    <!-- Error Modal -->
+    <div id="errorModal" class="modal">
+        <div class="modal-content error-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-exclamation-triangle"></i> Error</h2>
+                <button class="close-btn" id="closeErrorModal" title="Close error modal" aria-label="Close error modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="error-content">
+                    <div class="error-icon">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div class="error-message" id="errorMessage">
+                        An unexpected error occurred. Please try again.
+                    </div>
+                    <div class="error-details" id="errorDetails"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn primary" id="retryAction">
+                    <i class="fas fa-redo"></i>
+                    Retry
+                </button>
+                <button class="modal-btn secondary" id="dismissError">
+                    <i class="fas fa-times"></i>
+                    Dismiss
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="script_api.js"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('✅ Service Worker registered:', registration.scope);
+                        
+                        // Handle updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // New version available
+                                    if (confirm('A new version is available. Reload to update?')) {
+                                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch(error => {
+                        console.error('❌ Service Worker registration failed:', error);
+                    });
+            });
+        }
+    </script>
 </body>
 </html>
